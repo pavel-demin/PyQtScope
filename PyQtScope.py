@@ -65,6 +65,8 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.buffer2 = bytearray(2500)
     self.data1 = np.frombuffer(self.buffer1, np.int8)
     self.data2 = np.frombuffer(self.buffer2, np.int8)
+    self.format1 = ['0'] * 11
+    self.format2 = ['0'] * 11
     # create figure
     figure = Figure()
     figure.set_facecolor('none')
@@ -135,6 +137,23 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
 
   def read_data(self):
     if not self.device: return
+    #  0: WFId <Qstring> - description
+    #  1: PT_Fmt { ENV | Y } - format
+    #  2: XINcr <NR3> - time scale
+    #  3: PT_Off <NR1> - always 0
+    #  4: XZEro <NR3> - time of the first sample
+    #  5: XUNit <QString> - time units
+    #  6: YMUlt <NR3> - sample scale
+    #  7: YZEro <NR3> - always 0
+    #  8: YOFf <NR3> - sample offset
+    #  9: YUNit <QString> - sample unit
+    # 10: NR_Pt <NR1> - number of points
+    # Xn = XZEro + XINcr * n
+    # Yn = YZEro + YMUlt * (yn - YOFf)
+    self.transmit_command(b'WFMPre:CH1?')
+    self.format1 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+    self.transmit_command(b'WFMPre:CH2?')
+    self.format2 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
     self.transmit_command(b'DAT:SOU CH1;:CURV?')
     self.buffer1[:] = self.receive_result()[6:-1]
     self.curve1.set_ydata(self.data1)
@@ -148,12 +167,15 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     dialog.setDefaultSuffix('csv')
     dialog.setAcceptMode(QFileDialog.AcceptSave)
     dialog.setOptions(QFileDialog.DontConfirmOverwrite)
+    t = np.linspace(0.0, 2499.0, 2500) * float(self.format1[2]) + float(self.format1[4])
+    ch1 = (self.data1 - float(self.format1[8])) * float(self.format1[6])
+    ch2 = (self.data2 - float(self.format2[8])) * float(self.format2[6])
     if dialog.exec() == QDialog.Accepted:
       name = dialog.selectedFiles()
       fh = open(name[0], 'w')
-      fh.write('time;ch1;ch2\n')
+      fh.write('     t          ;     ch1      ;     ch2\n')
       for i in range(0, 2500):
-        fh.write('%12.9f;%12.9f;%12.9f\n' % (i, self.data1[i], self.data2[i]))
+        fh.write('%16.11f;%14.9f;%14.9f\n' % (t[i], ch1[i], ch2[i]))
       fh.close()
 
 app = QApplication(sys.argv)
