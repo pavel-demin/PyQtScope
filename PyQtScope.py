@@ -60,9 +60,11 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
   def __init__(self):
     super(PyQtScope, self).__init__()
     self.setupUi(self)
-    # data buffer
-    self.buffer = bytearray(2500)
-    self.data = np.frombuffer(self.buffer, np.int8)
+    # data buffers
+    self.buffer1 = bytearray(2500)
+    self.buffer2 = bytearray(2500)
+    self.data1 = np.frombuffer(self.buffer1, np.int8)
+    self.data2 = np.frombuffer(self.buffer2, np.int8)
     # create figure
     figure = Figure()
     figure.set_facecolor('none')
@@ -70,7 +72,8 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.axes = figure.add_subplot(111)
     self.canvas = FigureCanvas(figure)
     self.plotLayout.addWidget(self.canvas)
-    self.curve, = self.axes.plot(np.zeros(2500))
+    self.curve1, = self.axes.plot(np.zeros(2500), color = '#EEDD00')
+    self.curve2, = self.axes.plot(np.zeros(2500), color = '#00DDEE')
     self.axes.set_xticks(np.arange(0, 2501, 250))
     self.axes.set_yticks(np.arange(-100, 101, 25))
     self.axes.set_xticklabels([])
@@ -132,16 +135,12 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
 
   def read_data(self):
     if not self.device: return
-    self.transmit_command(b'WFMP?')
-    buffer = self.receive_result()
-    print(buffer)
-    preamble = buffer.decode("utf-8").rsplit(';')
-    print(preamble)
-    voltsbit = float(preamble[12])
-    print(voltsbit)
-    self.transmit_command(b'CURV?')
-    self.buffer[:] = self.receive_result()[6:-1]
-    self.curve.set_ydata(np.abs(self.data))
+    self.transmit_command(b'DAT:SOU CH1;:CURV?')
+    self.buffer1[:] = self.receive_result()[6:-1]
+    self.curve1.set_ydata(self.data1)
+    self.transmit_command(b'DAT:SOU CH2;:CURV?')
+    self.buffer2[:] = self.receive_result()[6:-1]
+    self.curve2.set_ydata(self.data2)
     self.canvas.draw()
 
   def save_data(self):
@@ -154,7 +153,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       fh = open(name[0], 'w')
       fh.write('time;ch1;ch2\n')
       for i in range(0, 2500):
-        fh.write('%12.9f;%12.9f;%12.9f\n' % (self.data[i], self.data[i], self.data[i]))
+        fh.write('%12.9f;%12.9f;%12.9f\n' % (i, self.data1[i], self.data2[i]))
       fh.close()
 
 app = QApplication(sys.argv)
