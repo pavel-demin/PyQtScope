@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>900</width>
+    <width>800</width>
     <height>600</height>
    </rect>
   </property>
@@ -48,7 +48,7 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>300</width>
+        <width>200</width>
         <height>0</height>
        </size>
       </property>
@@ -58,6 +58,47 @@
        </font>
       </property>
       <layout class="QGridLayout" name="gridLayout">
+       <item row="2" column="0">
+        <spacer name="spacer2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="meas5">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="meas3">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="meas4">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="meas2">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QPushButton" name="readButton">
          <property name="text">
@@ -65,29 +106,49 @@
          </property>
         </widget>
        </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="measLabel">
+         <property name="text">
+          <string>MEASUREMENTS</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
+        <widget class="QLabel" name="cursLabel">
+         <property name="text">
+          <string>CURSORS</string>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="0">
+        <spacer name="spacer1">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="meas1">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="freqLabel">
-         <property name="text">
-          <string>Frequency, Hz</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="peakLabel">
-         <property name="text">
-          <string>Peak-to-peak, V</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
         <widget class="QPushButton" name="saveButton">
          <property name="text">
           <string>Save data</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
-        <spacer name="spacer">
+       <item row="9" column="0">
+        <spacer name="spacer3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>

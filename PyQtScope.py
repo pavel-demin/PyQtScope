@@ -155,15 +155,14 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     # 10: NR_Pt <NR1> - number of points
     # Xn = XZEro + XINcr * n
     # Yn = YZEro + YMUlt * (yn - YOFf)
-    self.transmit_command(b'CH1:SCA?')
+    self.transmit_command(b'CH1:SCA?;:CH2:SCA?;:HOR:MAI:SCA?')
+    sca = self.receive_result()[:-1].decode("utf-8").rsplit(';')
     if self.sca1: self.sca1.remove()
-    self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(self.receive_result()[:-1])), color = '#EEDD00')
-    self.transmit_command(b'CH2:SCA?')
+    self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(sca[0])), color = '#EEDD00')
     if self.sca2: self.sca2.remove()
-    self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(self.receive_result()[:-1])), color = '#00DDEE')
-    self.transmit_command(b'HOR:MAI:SCA?')
+    self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(sca[1])), color = '#00DDEE')
     if self.scam: self.scam.remove()
-    self.scam = self.axes.text(1500, -110, 'M %ss' % metric_prefix(float(self.receive_result()[:-1])))
+    self.scam = self.axes.text(1500, -110, 'M %ss' % metric_prefix(float(sca[2])))
     self.transmit_command(b'WFMPre:CH1?')
     self.format1 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
     self.transmit_command(b'WFMPre:CH2?')
@@ -175,6 +174,26 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.buffer2[:] = self.receive_result()[6:-1]
     self.curve2.set_ydata(self.data2)
     self.canvas.draw()
+    self.transmit_command(b'MEASU:MEAS1?;:MEASU:MEAS1:VAL?;:MEASU:MEAS2?;:MEASU:MEAS2:VAL?;:MEASU:MEAS3?;:MEASU:MEAS3:VAL?')
+    result = self.receive_result()[:-1] + b';'
+    self.transmit_command(b'MEASU:MEAS4?;:MEASU:MEAS4:VAL?;:MEASU:MEAS5?;:MEASU:MEAS5:VAL?')
+    result += self.receive_result()[:-1]
+    meas = result.decode("utf-8").rsplit(';')
+    for i in range(0, 5):
+      typ = meas[i * 4 + 0]
+      uni = meas[i * 4 + 1]
+      sou = meas[i * 4 + 2]
+      val = meas[i * 4 + 3]
+      if typ == 'NONE':
+        val = ''
+        uni = ''
+      elif val == '9.9E37':
+        val = '?'
+        uni = ''
+      else:
+        val = metric_prefix(float(meas[i * 4 + 3]))
+        uni = uni.strip('"')
+      getattr(self, 'meas%d' % (i + 1)).setText('%s %s %s%s' % (sou, typ, val, uni))
 
   def save_data(self):
     dialog = QFileDialog(self, 'Write csv file', '.', '*.csv')
