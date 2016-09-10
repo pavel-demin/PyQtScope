@@ -35,13 +35,13 @@ from matplotlib.ticker import Formatter, FuncFormatter
 
 from PyQt5.uic import loadUiType
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QDialog, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QDialog, QFileDialog, QProgressDialog
 
 Ui_PyQtScope, QMainWindow = loadUiType('PyQtScope.ui')
 
 def metric_prefix(x):
   if x == 0.0:
-    return '0'
+    return '0 '
   elif abs(x) >= 1.0e6:
     return '%g M' % (x * 1.0e-6)
   elif abs(x) >= 1.0e3:
@@ -59,6 +59,9 @@ def metric_prefix(x):
 
 
 class PyQtScope(QMainWindow, Ui_PyQtScope):
+
+  cursors = {'OFF':'OFF', 'HBARS':'AMPLITUDE', 'VBARS':'TIME'}
+
   def __init__(self):
     super(PyQtScope, self).__init__()
     self.setupUi(self)
@@ -155,45 +158,81 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     # 10: NR_Pt <NR1> - number of points
     # Xn = XZEro + XINcr * n
     # Yn = YZEro + YMUlt * (yn - YOFf)
-    self.transmit_command(b'CH1:SCA?;:CH2:SCA?;:HOR:MAI:SCA?')
-    sca = self.receive_result()[:-1].decode("utf-8").rsplit(';')
-    if self.sca1: self.sca1.remove()
-    self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(sca[0])), color = '#EEDD00')
-    if self.sca2: self.sca2.remove()
-    self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(sca[1])), color = '#00DDEE')
-    if self.scam: self.scam.remove()
-    self.scam = self.axes.text(1500, -110, 'M %ss' % metric_prefix(float(sca[2])))
-    self.transmit_command(b'WFMPre:CH1?')
-    self.format1 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
-    self.transmit_command(b'WFMPre:CH2?')
-    self.format2 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
-    self.transmit_command(b'DAT:SOU CH1;:CURV?')
-    self.buffer1[:] = self.receive_result()[6:-1]
-    self.curve1.set_ydata(self.data1)
-    self.transmit_command(b'DAT:SOU CH2;:CURV?')
-    self.buffer2[:] = self.receive_result()[6:-1]
-    self.curve2.set_ydata(self.data2)
-    self.canvas.draw()
-    self.transmit_command(b'MEASU:MEAS1?;:MEASU:MEAS1:VAL?;:MEASU:MEAS2?;:MEASU:MEAS2:VAL?;:MEASU:MEAS3?;:MEASU:MEAS3:VAL?')
-    result = self.receive_result()[:-1] + b';'
-    self.transmit_command(b'MEASU:MEAS4?;:MEASU:MEAS4:VAL?;:MEASU:MEAS5?;:MEASU:MEAS5:VAL?')
-    result += self.receive_result()[:-1]
-    meas = result.decode("utf-8").rsplit(';')
-    for i in range(0, 5):
-      typ = meas[i * 4 + 0]
-      uni = meas[i * 4 + 1]
-      sou = meas[i * 4 + 2]
-      val = meas[i * 4 + 3]
-      if typ == 'NONE':
-        val = ''
-        uni = ''
-      elif val == '9.9E37':
-        val = '?'
-        uni = ''
+    progress = QProgressDialog('Data transfer status', 'Cancel', 0, 5)
+    progress.setModal(True)
+    progress.setMinimumDuration(0)
+    try:
+      progress.setValue(0)
+      # read channel and time scales
+      self.transmit_command(b'CH1:SCA?;:CH2:SCA?;:HOR:MAI:SCA?')
+      sca = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      if self.sca1:
+        self.sca1.remove()
+        self.sca1 = None
+      self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(sca[0])), color = '#EEDD00')
+      if self.sca2:
+        self.sca2.remove()
+        self.sca2 = None
+      self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(sca[1])), color = '#00DDEE')
+      if self.scam:
+        self.scam.remove()
+        self.scam = None
+      self.scam = self.axes.text(1500, -110, 'M %ss' % metric_prefix(float(sca[2])))
+      progress.setValue(1)
+      # read formats
+      self.transmit_command(b'WFMPre:CH1?')
+      self.format1 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      self.transmit_command(b'WFMPre:CH2?')
+      self.format2 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      progress.setValue(2)
+      # read curves
+      self.transmit_command(b'DAT:SOU CH1;:CURV?')
+      self.buffer1[:] = self.receive_result()[6:-1]
+      self.curve1.set_ydata(self.data1)
+      self.transmit_command(b'DAT:SOU CH2;:CURV?')
+      self.buffer2[:] = self.receive_result()[6:-1]
+      self.curve2.set_ydata(self.data2)
+      self.canvas.draw()
+      progress.setValue(3)
+      # read measurements
+      self.transmit_command(b'MEASU:MEAS1?;:MEASU:MEAS1:VAL?;:MEASU:MEAS2?;:MEASU:MEAS2:VAL?;:MEASU:MEAS3?;:MEASU:MEAS3:VAL?')
+      result = self.receive_result()[:-1] + b';'
+      self.transmit_command(b'MEASU:MEAS4?;:MEASU:MEAS4:VAL?;:MEASU:MEAS5?;:MEASU:MEAS5:VAL?')
+      result += self.receive_result()[:-1]
+      meas = result.decode("utf-8").rsplit(';')
+      for i in range(0, 5):
+        typ = meas[i * 4 + 0]
+        uni = meas[i * 4 + 1]
+        sou = meas[i * 4 + 2]
+        val = meas[i * 4 + 3]
+        if typ == 'NONE':
+          val = ''
+          uni = ''
+        elif val == '9.9E37':
+          val = '?'
+          uni = ''
+        else:
+          val = metric_prefix(float(meas[i * 4 + 3]))
+          uni = uni.strip('"')
+        getattr(self, 'meas%d' % (i + 1)).setText('%s %s %s%s' % (sou, typ, val, uni))
+      progress.setValue(4)
+      # read cursors
+      self.transmit_command(b'CURS?;:CURS:VBA:HPOS1?;:CURS:VBA:HPOS2?')
+      curs = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      self.curst.setText('%s %s' % (curs[1], self.cursors[curs[0]]))
+      if curs[0] == 'VBARS':
+        self.curs1.setText('%ss\t%sV' % (metric_prefix(float(curs[3])), metric_prefix(float(curs[8]))))
+        self.curs2.setText('%ss\t%sV' % (metric_prefix(float(curs[4])), metric_prefix(float(curs[9]))))
+      elif curs[0] == 'HBARS':
+        self.curs1.setText('%sV' % metric_prefix(float(curs[6])))
+        self.curs2.setText('%sV' % metric_prefix(float(curs[7])))
       else:
-        val = metric_prefix(float(meas[i * 4 + 3]))
-        uni = uni.strip('"')
-      getattr(self, 'meas%d' % (i + 1)).setText('%s %s %s%s' % (sou, typ, val, uni))
+        self.curs1.setText('')
+        self.curs2.setText('')
+      progress.setValue(5)
+    except:
+      print("Error: %s" % sys.exc_info()[1])
+      progress.setValue(5)
 
   def save_data(self):
     dialog = QFileDialog(self, 'Write csv file', '.', '*.csv')
