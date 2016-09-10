@@ -39,21 +39,23 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSize
 
 Ui_PyQtScope, QMainWindow = loadUiType('PyQtScope.ui')
 
-def metric_prefix(x, pos = None):
+def metric_prefix(x):
   if x == 0.0:
     return '0'
   elif abs(x) >= 1.0e6:
-    return '%gM' % (x * 1.0e-6)
+    return '%g M' % (x * 1.0e-6)
   elif abs(x) >= 1.0e3:
-    return '%gk' % (x * 1.0e-3)
+    return '%g k' % (x * 1.0e-3)
   elif abs(x) >= 1.0e0:
-    return '%g' % x
+    return '% g ' % x
   elif abs(x) >= 1.0e-3:
-    return '%gm' % (x * 1e+3)
+    return '%g m' % (x * 1e+3)
   elif abs(x) >= 1.0e-6:
-    return '%gu' % (x * 1e+6)
+    return '%g u' % (x * 1e+6)
+  elif abs(x) >= 1.0e-9:
+    return '%g n' % (x * 1e+9)
   else:
-    return '%g' % x
+    return '%g ' % x
 
 
 class PyQtScope(QMainWindow, Ui_PyQtScope):
@@ -70,7 +72,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     # create figure
     figure = Figure()
     figure.set_facecolor('none')
-    figure.subplots_adjust(left = 0.01, bottom = 0.01, right = 0.99, top = 0.99)
+    figure.subplots_adjust(left = 0.01, bottom = 0.06, right = 0.99, top = 0.99)
     self.axes = figure.add_subplot(111)
     self.canvas = FigureCanvas(figure)
     self.plotLayout.addWidget(self.canvas)
@@ -81,6 +83,9 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.axes.set_xticklabels([])
     self.axes.set_yticklabels([])
     self.axes.grid()
+    self.sca1 = None
+    self.sca2 = None
+    self.scam = None
     # create navigation toolbar
     self.toolbar = NavigationToolbar(self.canvas, self.plotWidget, False)
     # remove subplots action
@@ -97,7 +102,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     else:
       backend = usb.backend.libusb1.get_backend()
     self.device = usb.core.find(idVendor = 0x0699, idProduct = 0x0369, backend = backend)
-    while self.device  is None:
+    while self.device is None:
       reply = QMessageBox.critical(self, 'PyQtScope', 'Cannot access USB device', QMessageBox.Abort | QMessageBox.Retry | QMessageBox.Ignore)
       if reply == QMessageBox.Abort:
         sys.exit(1)
@@ -150,6 +155,15 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     # 10: NR_Pt <NR1> - number of points
     # Xn = XZEro + XINcr * n
     # Yn = YZEro + YMUlt * (yn - YOFf)
+    self.transmit_command(b'CH1:SCA?')
+    if self.sca1: self.sca1.remove()
+    self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(self.receive_result()[:-1])), color = '#EEDD00')
+    self.transmit_command(b'CH2:SCA?')
+    if self.sca2: self.sca2.remove()
+    self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(self.receive_result()[:-1])), color = '#00DDEE')
+    self.transmit_command(b'HOR:MAI:SCA?')
+    if self.scam: self.scam.remove()
+    self.scam = self.axes.text(1500, -110, 'M %ss' % metric_prefix(float(self.receive_result()[:-1])))
     self.transmit_command(b'WFMPre:CH1?')
     self.format1 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
     self.transmit_command(b'WFMPre:CH2?')
