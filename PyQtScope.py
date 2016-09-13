@@ -208,7 +208,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
         if typ == 'NONE':
           val = ''
           uni = ''
-        elif val == '9.9E37':
+        elif abs(float(val)) > 9.9E9:
           val = '?'
           uni = ''
         else:
@@ -221,8 +221,16 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       curs = self.receive_result()[:-1].decode("utf-8").rsplit(';')
       self.curst.setText('%s %s' % (curs[1], self.cursors[curs[0]]))
       if curs[0] == 'VBARS':
-        self.curs1.setText('%ss\t%sV' % (metric_prefix(float(curs[3])), metric_prefix(float(curs[8]))))
-        self.curs2.setText('%ss\t%sV' % (metric_prefix(float(curs[4])), metric_prefix(float(curs[9]))))
+        val = float(curs[8])
+        if abs(val) > 9.9E9:
+          self.curs1.setText('%ss' % (metric_prefix(float(curs[3]))))
+        else:
+          self.curs1.setText('%ss\t%sV' % (metric_prefix(float(curs[3])), metric_prefix(float(curs[8]))))
+        val = float(curs[9])
+        if abs(val) > 9.9E9:
+          self.curs2.setText('%ss' % (metric_prefix(float(curs[4]))))
+        else:
+          self.curs2.setText('%ss\t%sV' % (metric_prefix(float(curs[4])), metric_prefix(float(curs[9]))))
       elif curs[0] == 'HBARS':
         self.curs1.setText('%sV' % metric_prefix(float(curs[6])))
         self.curs2.setText('%sV' % metric_prefix(float(curs[7])))

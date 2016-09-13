@@ -105,13 +105,6 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
-           <widget class="QLabel" name="meas4">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QLabel" name="meas1">
             <property name="text">
              <string/>
@@ -127,6 +120,13 @@
           </item>
           <item>
            <widget class="QLabel" name="meas3">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="meas4">
             <property name="text">
              <string/>
             </property>
