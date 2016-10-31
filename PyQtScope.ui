@@ -20,7 +20,7 @@
      <height>600</height>
     </size>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QHBoxLayout" name="centralLayout">
     <item>
      <widget class="QWidget" name="plotWidget" native="true">
       <property name="sizePolicy">
@@ -99,11 +99,11 @@
         </spacer>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox">
+        <widget class="QGroupBox" name="measBox">
          <property name="title">
           <string>MEASUREMENTS</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <layout class="QVBoxLayout" name="measLayout">
           <item>
            <widget class="QLabel" name="meas1">
             <property name="text">
@@ -156,11 +156,11 @@
         </spacer>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_2">
+        <widget class="QGroupBox" name="cursBox">
          <property name="title">
           <string>CURSORS</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout">
+         <layout class="QGridLayout" name="cursLayout">
           <item row="2" column="0">
            <widget class="QLabel" name="curs3">
             <property name="text">
@@ -191,6 +191,13 @@
           </item>
           <item row="2" column="1">
            <widget class="QLabel" name="curs4">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QLabel" name="delta">
             <property name="text">
              <string/>
             </property>

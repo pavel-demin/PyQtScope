@@ -147,8 +147,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       data += command + b'\0'*((4 - (size % 4)) % 4)
       self.device.write(0x06, data, 1000)
     else:
-      self.device.write(command)
-      self.device.write(b'\n')
+      self.device.write(command + b'\n')
 
   def receive_result(self):
     if os.name == 'nt':
@@ -240,7 +239,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
         getattr(self, 'meas%d' % (i + 1)).setText('%s %s %s%s' % (sou, typ, val, uni))
       progress.setValue(4)
       # read cursors
-      self.transmit_command(b'CURS?;:CURS:VBA:HPOS1?;:CURS:VBA:HPOS2?')
+      self.transmit_command(b'CURS?;:CURS:VBA:HPOS1?;:CURS:VBA:HPOS2?;:CURS:HBA:DELT?;:CURS:VBA:DELT?')
       curs = self.receive_result()[:-1].decode('utf-8').rsplit(';')
       self.curst.setText('%s %s' % (curs[1], self.cursors[curs[0]]))
       if curs[0] == 'VBARS':
@@ -258,16 +257,19 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
         else:
           self.curs3.setText('%ss' % (metric_prefix(float(curs[4]))))
           self.curs4.setText('%sV' % (metric_prefix(float(curs[9]))))
+        self.delta.setText('dt = %ss' % (metric_prefix(float(curs[11]))))
       elif curs[0] == 'HBARS':
         self.curs1.setText('%sV' % metric_prefix(float(curs[6])))
         self.curs2.setText('')
         self.curs3.setText('%sV' % metric_prefix(float(curs[7])))
         self.curs4.setText('')
+        self.delta.setText('dV = %sV' % (metric_prefix(float(curs[10]))))
       else:
         self.curs1.setText('')
         self.curs2.setText('')
         self.curs3.setText('')
         self.curs4.setText('')
+        self.delta.setText('')
       progress.setValue(5)
     except:
       print('Error: %s' % sys.exc_info()[1])
