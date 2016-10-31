@@ -100,47 +100,70 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.saveButton.clicked.connect(self.save_data)
     # setup USB connection
     self.btag = 0
+    self.device = None
     if os.name == 'nt':
       backend = usb.backend.libusb1.get_backend(find_library = lambda x: 'libusb-1.0.dll')
-    else:
-      backend = usb.backend.libusb1.get_backend()
-    self.device = usb.core.find(idVendor = 0x0699, idProduct = 0x0369, backend = backend)
-    while self.device is None:
-      reply = QMessageBox.critical(self, 'PyQtScope', 'Cannot access USB device', QMessageBox.Abort | QMessageBox.Retry | QMessageBox.Ignore)
-      if reply == QMessageBox.Abort:
-        sys.exit(1)
-      elif reply == QMessageBox.Retry:
-        self.device = usb.core.find(idVendor = 0x0699, idProduct = 0x0369, backend = backend)
-      else:
-        break
-    if self.device:
+      self.device = usb.core.find(idVendor = 0x0699, idProduct = 0x0369, backend = backend)
+      while self.device is None:
+        reply = QMessageBox.critical(self, 'PyQtScope', 'Cannot access USB device', QMessageBox.Abort | QMessageBox.Retry | QMessageBox.Ignore)
+        if reply == QMessageBox.Abort:
+          sys.exit(1)
+        elif reply == QMessageBox.Retry:
+          self.device = usb.core.find(idVendor = 0x0699, idProduct = 0x0369, backend = backend)
+        else:
+          break
       self.device.set_configuration()
-      self.transmit_command(b'*IDN?')
-      print(self.receive_result())
+    else:
+      try:
+        self.device = open('/dev/usbtmc1', 'r+b')
+      except:
+        pass
+      while self.device is None:
+        reply = QMessageBox.critical(self, 'PyQtScope', 'Cannot access USB device', QMessageBox.Abort | QMessageBox.Retry | QMessageBox.Ignore)
+        if reply == QMessageBox.Abort:
+          sys.exit(1)
+        elif reply == QMessageBox.Retry:
+          try:
+            self.device = open('/dev/usbtmc1', 'r+b')
+          except:
+            pass
+        else:
+          break
+    if self.device:
       self.transmit_command(b'DESE 1')
       self.transmit_command(b'*ESE 1')
       self.transmit_command(b'*SRE 32')
+      self.transmit_command(b'HEAD 0')
       self.transmit_command(b'DAT INIT')
+      self.transmit_command(b'*IDN?')
+      print(self.receive_result())
 
   def transmit_command(self, command):
-    size = len(command)
-    self.btag = (self.btag % 255) + 1
-    data = struct.pack('BBBx', 1, self.btag, ~self.btag & 0xFF)
-    data += struct.pack('<LBxxx', size, 1)
-    data += command + b'\0'*((4 - (size % 4)) % 4)
-    self.device.write(0x06, data, 1000)
+    if os.name == 'nt':
+      size = len(command)
+      self.btag = (self.btag % 255) + 1
+      data = struct.pack('BBBx', 1, self.btag, ~self.btag & 0xFF)
+      data += struct.pack('<LBxxx', size, 1)
+      data += command + b'\0'*((4 - (size % 4)) % 4)
+      self.device.write(0x06, data, 1000)
+    else:
+      self.device.write(command)
+      self.device.write(b'\n')
 
   def receive_result(self):
-    result = b''
-    stop = 0
-    while not stop:
-      self.btag = (self.btag % 255) + 1
-      data = struct.pack('BBBx', 2, self.btag, ~self.btag & 0xFF)
-      data += struct.pack('<LBxxx', 1024, 0)
-      self.device.write(0x06, data, 1000)
-      data = self.device.read(0x85, 1036, 1000).tobytes()
-      size, stop = struct.unpack_from('<LBxxx', data, 4)
-      result += data[12:size+12]
+    if os.name == 'nt':
+      result = b''
+      stop = 0
+      while not stop:
+        self.btag = (self.btag % 255) + 1
+        data = struct.pack('BBBx', 2, self.btag, ~self.btag & 0xFF)
+        data += struct.pack('<LBxxx', 1024, 0)
+        self.device.write(0x06, data, 1000)
+        data = self.device.read(0x85, 1036, 1000).tobytes()
+        size, stop = struct.unpack_from('<LBxxx', data, 4)
+        result += data[12:size+12]
+    else:
+      result = self.device.readline()
     return result
 
   def read_data(self):
@@ -165,7 +188,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       progress.setValue(0)
       # read channel and time scales
       self.transmit_command(b'CH1:SCA?;:CH2:SCA?;:HOR:MAI:SCA?')
-      sca = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      sca = self.receive_result()[:-1].decode('utf-8').rsplit(';')
       if self.sca1:
         self.sca1.remove()
         self.sca1 = None
@@ -181,9 +204,9 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       progress.setValue(1)
       # read formats
       self.transmit_command(b'WFMPre:CH1?')
-      self.format1 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      self.format1 = self.receive_result()[:-1].decode('utf-8').rsplit(';')
       self.transmit_command(b'WFMPre:CH2?')
-      self.format2 = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      self.format2 = self.receive_result()[:-1].decode('utf-8').rsplit(';')
       progress.setValue(2)
       # read curves
       self.transmit_command(b'DAT:SOU CH1;:CURV?')
@@ -199,7 +222,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       result = self.receive_result()[:-1] + b';'
       self.transmit_command(b'MEASU:MEAS4?;:MEASU:MEAS4:VAL?;:MEASU:MEAS5?;:MEASU:MEAS5:VAL?')
       result += self.receive_result()[:-1]
-      meas = result.decode("utf-8").rsplit(';')
+      meas = result.decode('utf-8').rsplit(';')
       for i in range(0, 5):
         typ = meas[i * 4 + 0]
         uni = meas[i * 4 + 1]
@@ -218,7 +241,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       progress.setValue(4)
       # read cursors
       self.transmit_command(b'CURS?;:CURS:VBA:HPOS1?;:CURS:VBA:HPOS2?')
-      curs = self.receive_result()[:-1].decode("utf-8").rsplit(';')
+      curs = self.receive_result()[:-1].decode('utf-8').rsplit(';')
       self.curst.setText('%s %s' % (curs[1], self.cursors[curs[0]]))
       if curs[0] == 'VBARS':
         val = float(curs[8])
@@ -239,7 +262,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
         self.curs2.setText('')
       progress.setValue(5)
     except:
-      print("Error: %s" % sys.exc_info()[1])
+      print('Error: %s' % sys.exc_info()[1])
       progress.setValue(5)
 
   def save_data(self):
