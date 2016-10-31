@@ -79,8 +79,8 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.axes = figure.add_subplot(111)
     self.canvas = FigureCanvas(figure)
     self.plotLayout.addWidget(self.canvas)
-    self.curve1, = self.axes.plot(np.zeros(2500), color = '#EEDD00')
-    self.curve2, = self.axes.plot(np.zeros(2500), color = '#00DDEE')
+    self.curve1, = self.axes.plot(np.zeros(2500), color = '#FFAA00')
+    self.curve2, = self.axes.plot(np.zeros(2500), color = '#00CCCC')
     self.axes.set_xticks(np.arange(0, 2501, 250))
     self.axes.set_yticks(np.arange(-100, 101, 25))
     self.axes.set_xticklabels([])
@@ -169,11 +169,11 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       if self.sca1:
         self.sca1.remove()
         self.sca1 = None
-      self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(sca[0])), color = '#EEDD00')
+      self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(sca[0])), color = '#FFAA00')
       if self.sca2:
         self.sca2.remove()
         self.sca2 = None
-      self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(sca[1])), color = '#00DDEE')
+      self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(sca[1])), color = '#00CCCC')
       if self.scam:
         self.scam.remove()
         self.scam = None
