@@ -247,19 +247,27 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
         val = float(curs[8])
         if abs(val) > 9.9E9:
           self.curs1.setText('%ss' % (metric_prefix(float(curs[3]))))
+          self.curs2.setText('')
         else:
-          self.curs1.setText('%ss\t%sV' % (metric_prefix(float(curs[3])), metric_prefix(float(curs[8]))))
+          self.curs1.setText('%ss' % (metric_prefix(float(curs[3]))))
+          self.curs2.setText('%sV' % (metric_prefix(float(curs[8]))))
         val = float(curs[9])
         if abs(val) > 9.9E9:
-          self.curs2.setText('%ss' % (metric_prefix(float(curs[4]))))
+          self.curs3.setText('%ss' % (metric_prefix(float(curs[4]))))
+          self.curs4.setText('')
         else:
-          self.curs2.setText('%ss\t%sV' % (metric_prefix(float(curs[4])), metric_prefix(float(curs[9]))))
+          self.curs3.setText('%ss' % (metric_prefix(float(curs[4]))))
+          self.curs4.setText('%sV' % (metric_prefix(float(curs[9]))))
       elif curs[0] == 'HBARS':
         self.curs1.setText('%sV' % metric_prefix(float(curs[6])))
-        self.curs2.setText('%sV' % metric_prefix(float(curs[7])))
+        self.curs2.setText('')
+        self.curs3.setText('%sV' % metric_prefix(float(curs[7])))
+        self.curs4.setText('')
       else:
         self.curs1.setText('')
         self.curs2.setText('')
+        self.curs3.setText('')
+        self.curs4.setText('')
       progress.setValue(5)
     except:
       print('Error: %s' % sys.exc_info()[1])

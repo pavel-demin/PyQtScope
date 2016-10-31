@@ -160,23 +160,37 @@
          <property name="title">
           <string>CURSORS</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QLabel" name="curst">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="2" column="0">
+           <widget class="QLabel" name="curs3">
             <property name="text">
              <string/>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="1" column="0">
            <widget class="QLabel" name="curs1">
             <property name="text">
              <string/>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="1" column="1">
            <widget class="QLabel" name="curs2">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="curst">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="curs4">
             <property name="text">
              <string/>
             </property>
