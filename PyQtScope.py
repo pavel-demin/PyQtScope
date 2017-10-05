@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Control program for the Tektronix TDS2022B oscilloscope
-# Copyright (C) 2016  Pavel Demin
+# Copyright (C) 2017  Pavel Demin
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -61,6 +61,7 @@ def metric_prefix(x):
 class PyQtScope(QMainWindow, Ui_PyQtScope):
 
   cursors = {'OFF':'OFF', 'HBARS':'AMPLITUDE', 'VBARS':'TIME'}
+  colors = ['orange', 'turquoise']
 
   def __init__(self):
     super(PyQtScope, self).__init__()
@@ -73,14 +74,14 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     self.format1 = ['0'] * 11
     self.format2 = ['0'] * 11
     # create figure
-    figure = Figure()
-    figure.set_facecolor('none')
-    figure.subplots_adjust(left = 0.01, bottom = 0.06, right = 0.99, top = 0.99)
-    self.axes = figure.add_subplot(111)
-    self.canvas = FigureCanvas(figure)
+    self.figure = Figure()
+    self.figure.set_facecolor('none')
+    self.figure.subplots_adjust(left = 0.01, bottom = 0.06, right = 0.99, top = 0.99)
+    self.axes = self.figure.add_subplot(111)
+    self.canvas = FigureCanvas(self.figure)
     self.plotLayout.addWidget(self.canvas)
-    self.curve1, = self.axes.plot(np.zeros(2500), color = '#FFAA00')
-    self.curve2, = self.axes.plot(np.zeros(2500), color = '#00CCCC')
+    self.curve1, = self.axes.plot(np.zeros(2500), color = self.colors[0])
+    self.curve2, = self.axes.plot(np.zeros(2500), color = self.colors[1])
     self.axes.set_xticks(np.arange(0, 2501, 250))
     self.axes.set_yticks(np.arange(-100, 101, 25))
     self.axes.set_xticklabels([])
@@ -191,15 +192,15 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       if self.sca1:
         self.sca1.remove()
         self.sca1 = None
-      self.sca1 = self.axes.text(0, -110, 'CH1 %sV' % metric_prefix(float(sca[0])), color = '#FFAA00')
+      self.sca1 = self.figure.text(0.01, 0.01, 'CH1 %sV' % metric_prefix(float(sca[0])), color = self.colors[0])
       if self.sca2:
         self.sca2.remove()
         self.sca2 = None
-      self.sca2 = self.axes.text(750, -110, 'CH2 %sV' % metric_prefix(float(sca[1])), color = '#00CCCC')
+      self.sca2 = self.figure.text(0.31, 0.01, 'CH2 %sV' % metric_prefix(float(sca[1])), color = self.colors[1])
       if self.scam:
         self.scam.remove()
         self.scam = None
-      self.scam = self.axes.text(1500, -110, 'M %ss' % metric_prefix(float(sca[2])))
+      self.scam = self.figure.text(0.61, 0.01, 'M %ss' % metric_prefix(float(sca[2])))
       progress.setValue(1)
       # read formats
       self.transmit_command(b'WFMPre:CH1?')
