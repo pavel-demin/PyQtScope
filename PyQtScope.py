@@ -18,6 +18,7 @@
 
 import os
 import sys
+import glob
 import struct
 
 import usb.core
@@ -116,7 +117,8 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       self.device.set_configuration()
     else:
       try:
-        self.device = open('/dev/usbtmc1', 'r+b')
+        list = glob.glob('/dev/usbtmc*')
+        self.device = open(list[0], 'r+b')
       except:
         pass
       while self.device is None:
@@ -125,7 +127,8 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
           sys.exit(1)
         elif reply == QMessageBox.Retry:
           try:
-            self.device = open('/dev/usbtmc1', 'r+b')
+            list = glob.glob('/dev/usbtmc*')
+            self.device = open(list[0], 'r+b')
           except:
             pass
         else:
@@ -150,7 +153,7 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
     else:
       self.device.write(command + b'\n')
 
-  def receive_result(self):
+  def receive_result(self, size = None):
     if os.name == 'nt':
       result = b''
       stop = 0
@@ -162,8 +165,10 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
         data = self.device.read(0x85, 1036, 1000).tobytes()
         size, stop = struct.unpack_from('<LBxxx', data, 4)
         result += data[12:size+12]
-    else:
+    elif size is None:
       result = self.device.readline()
+    else:
+      result = self.device.read(size)
     return result
 
   def read_data(self):
@@ -210,10 +215,10 @@ class PyQtScope(QMainWindow, Ui_PyQtScope):
       progress.setValue(2)
       # read curves
       self.transmit_command(b'DAT:SOU CH1;:CURV?')
-      self.buffer1[:] = self.receive_result()[6:-1]
+      self.buffer1[:] = self.receive_result(2507)[6:-1]
       self.curve1.set_ydata(self.data1)
       self.transmit_command(b'DAT:SOU CH2;:CURV?')
-      self.buffer2[:] = self.receive_result()[6:-1]
+      self.buffer2[:] = self.receive_result(2507)[6:-1]
       self.curve2.set_ydata(self.data2)
       self.canvas.draw()
       progress.setValue(3)
